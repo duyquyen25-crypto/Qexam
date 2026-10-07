@@ -191,7 +191,7 @@
                         <button onclick="downloadTemplateWord()" class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded shadow-sm hover:bg-blue-50"><i class="fa-solid fa-file-word mr-2"></i>Tải Tệp Mẫu (Word)</button>
                         <label class="bg-primary text-white px-4 py-2 rounded shadow cursor-pointer hover:bg-blue-800">
                             <i class="fa-solid fa-upload mr-2"></i>Tải Lên Tệp (.docx)
-                            <input type="file" id="exam-file-upload" class="hidden" accept=".docx,.txt,.pdf">
+                            <input type="file" id="exam-file-upload" class="hidden" accept=".docx,.doc,.txt,.pdf">
                         </label>
                     </div>
                 </div>
@@ -382,42 +382,27 @@
         // ==========================================
         // 1. CẤU HÌNH DATABASE (FIREBASE) - QUAN TRỌNG NHẤT
         // ==========================================
-        // 👉 BẠN HÃY XÓA TOÀN BỘ ĐOẠN BÊN TRONG DẤU NGOẶC NHỌN {} BÊN DƯỚI 
-        // VÀ DÁN ĐOẠN CODE "firebaseConfig" BẠN LẤY TỪ FIREBASE VÀO ĐÂY:
-        const firebaseConfig = {  apiKey: "AIzaSyBxE_X6kzD851iE5VUs4l2h5VcvpdTBnbM",
-
-  authDomain: "mathexampro.firebaseapp.com",
-
-  databaseURL: "https://mathexampro-default-rtdb.firebaseio.com",
-
-  projectId: "mathexampro",
-
-  storageBucket: "mathexampro.firebasestorage.app",
-
-  messagingSenderId: "912277941099",
-
-  appId: "1:912277941099:web:2520ece14d49a2ccfc3a2e",
-
-  measurementId: "G-6G8S42J2C3"
-
-            
+        const firebaseConfig = {
+          apiKey: "AIzaSyBxE_X6kzD851iE5VUs4l2h5VcvpdTBnbM",
+          authDomain: "mathexampro.firebaseapp.com",
+          databaseURL: "https://mathexampro-default-rtdb.firebaseio.com",
+          projectId: "mathexampro",
+          storageBucket: "mathexampro.firebasestorage.app",
+          messagingSenderId: "912277941099",
+          appId: "1:912277941099:web:2520ece14d49a2ccfc3a2e",
+          measurementId: "G-6G8S42J2C3"
         };
         // ==========================================
 
         let app, firestoreDB;
-        let db = {
-            exams: {},       
-            submissions: []  
-        };
-
+        let db = { exams: {}, submissions: [] };
         let currentUser = null; 
         let currentExamDraft = { questions: [] };
         let activeStudentSession = null; 
         let timerInterval = null;
 
         async function initSystem() {
-            // Kiểm tra xem Giáo viên đã điền key Firebase chưa
-            if (Object.keys(firebaseConfig).length > 0) {
+            if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey) {
                 try {
                     app = initializeApp(firebaseConfig);
                     firestoreDB = getFirestore(app);
@@ -429,7 +414,7 @@
             } else {
                 Swal.fire({
                     title: 'Chưa cài đặt Máy chủ', 
-                    text: 'Trang web hiện đang chạy offline trên máy của bạn, học sinh sẽ không thể vào thi. Hãy xem file Hướng dẫn cài đặt Firebase để web hoạt động trực tuyến!', 
+                    text: 'Trang web hiện đang chạy offline. Học sinh không thể vào thi. Hãy xem file Hướng dẫn cài đặt Firebase để web hoạt động trực tuyến!', 
                     icon: 'warning'
                 });
                 loadLocalDB();
@@ -442,9 +427,7 @@
             const examsRef = collection(firestoreDB, 'exams');
             onSnapshot(examsRef, (snapshot) => {
                 db.exams = {};
-                snapshot.forEach(doc => {
-                    db.exams[doc.id] = doc.data();
-                });
+                snapshot.forEach(doc => { db.exams[doc.id] = doc.data(); });
                 if(currentUser === 'teacher' && document.getElementById('view-teacher-dashboard').classList.contains('active')) {
                     renderTeacherDashboard();
                 }
@@ -453,17 +436,13 @@
             const subsRef = collection(firestoreDB, 'submissions');
             onSnapshot(subsRef, (snapshot) => {
                 db.submissions = [];
-                snapshot.forEach(doc => {
-                    db.submissions.push(doc.data());
-                });
+                snapshot.forEach(doc => { db.submissions.push(doc.data()); });
                 if(currentUser === 'teacher') {
                     if(document.getElementById('view-teacher-submissions').classList.contains('active')) {
                         const pin = document.getElementById('view-teacher-submissions').dataset.currentPin;
                         if(pin) viewSubmissions(pin);
                     }
-                    if(document.getElementById('view-teacher-dashboard').classList.contains('active')) {
-                        renderTeacherDashboard(); 
-                    }
+                    if(document.getElementById('view-teacher-dashboard').classList.contains('active')) { renderTeacherDashboard(); }
                 }
             }, (error) => { console.error("Lỗi đồng bộ bài nộp:", error); });
         }
@@ -573,9 +552,7 @@
                         try {
                             await deleteDoc(doc(firestoreDB, 'exams', pin));
                             const subsToDelete = db.submissions.filter(s => s.pin === pin);
-                            for(let s of subsToDelete) {
-                                await deleteDoc(doc(firestoreDB, 'submissions', s.id));
-                            }
+                            for(let s of subsToDelete) { await deleteDoc(doc(firestoreDB, 'submissions', s.id)); }
                         } catch (e) { console.error(e); }
                     } else {
                         delete db.exams[pin];
@@ -624,6 +601,7 @@
                     <h2 style="color: #1e3a8a; font-size: 14pt;">PHẦN II. Câu trắc nghiệm đúng sai.</h2>
                     <p><b>Câu 2:</b> Cho đồ thị hàm số như hình vẽ bên dưới. Các mệnh đề sau đúng hay sai?</p>
                     <div style="background-color: #f0fdf4; padding: 10px; border: 1px dashed #22c55e;"><i>[Dán hình ảnh dùng chung cho cả Câu 2 vào đây - Xóa dòng này đi nếu không có]</i></div>
+                    
                     <p style="margin-left: 20px;">a) Tập xác định của hàm số là $\\mathbb{R}$. *</p>
                     <div style="background-color: #fffbeb; padding: 10px; border: 1px dashed #f59e0b; margin-left: 20px;"><i>[Nếu ý (a) có hình ảnh minh họa RIÊNG, hãy dán hình ảnh đó vào ĐÂY (ngay dưới ý a) - Xóa dòng này đi]</i></div>
                     
@@ -671,7 +649,7 @@
                             e.target.value = '';
                         })
                         .catch(function(err) {
-                            console.warn("Lỗi đọc bằng Mammoth (có thể do dùng file .doc cũ), hệ thống chuyển sang đọc dạng văn bản HTML...", err);
+                            console.warn("Lỗi đọc bằng Mammoth (có thể do file .doc cũ), hệ thống chuyển sang đọc dạng văn bản...", err);
                             const textReader = new FileReader();
                             textReader.onload = function(textEvt) {
                                 const content = textEvt.target.result;
@@ -713,7 +691,6 @@
 
                 if (!text && !el.querySelector('img')) continue;
 
-                // Tự động bỏ qua các dòng ghi chú/hướng dẫn trong tệp mẫu để không bị dính vào câu hỏi
                 if (/\[.*dán hình ảnh.*\]/i.test(text) || /\[.*xóa dòng này.*\]/i.test(text) || /\[.*hình ảnh minh họa.*\]/i.test(text)) {
                     continue;
                 }
@@ -783,7 +760,6 @@
                 }
             }
             if (currentQ) parsedQuestions.push(currentQ);
-            
             processParsedQuestions(parsedQuestions);
         }
 
@@ -797,13 +773,17 @@
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
                     
+                    if (/\[.*dán hình ảnh.*\]/i.test(line) || /\[.*xóa dòng này.*\]/i.test(line) || /\[.*hình ảnh minh họa.*\]/i.test(line)) {
+                        continue;
+                    }
+
                     if (line.toUpperCase().includes('PHẦN I.') || line.toUpperCase().includes('PHẦN 1')) { currentPart = 1; continue; }
                     if (line.toUpperCase().includes('PHẦN II.') || line.toUpperCase().includes('PHẦN 2')) { currentPart = 2; continue; }
                     if (line.toUpperCase().includes('PHẦN III.') || line.toUpperCase().includes('PHẦN 3')) { currentPart = 3; continue; }
 
                     if (/^Câu\s*\d+[:.]/i.test(line)) {
                         if (currentQ) parsedQuestions.push(currentQ);
-                        const content = line.replace(/^Câu\s*\d+[:.]\s*/i, '');
+                        let content = line.replace(/^Câu\s*\d+[:.]\s*/i, '');
                         currentQ = { id: Date.now() + Math.random(), content: content, type: currentPart === 1 ? 'mcq' : (currentPart === 2 ? 'tf' : 'short') };
                         if (currentPart === 1) { currentQ.options = []; currentQ.correct = null; }
                         if (currentPart === 2) { currentQ.subQs = []; }
@@ -864,7 +844,6 @@
             const publishBtn = document.getElementById('btn-publish');
             const qs = currentExamDraft.questions;
 
-            // Tính điểm tối đa dựa theo cấu hình
             let totalMax = 0;
             const sMcq = parseFloat(document.getElementById('score-mcq')?.value || 0.25);
             const sTf = parseFloat(document.getElementById('score-tf')?.value || 1.0);
